@@ -1,20 +1,17 @@
 name: Release
 
-name: Release
-
-          draft: false
+on:
   push:
     branches:
       - master
   workflow_dispatch:
 
-          prerelease: false
+jobs:
   bump-version-and-release:
     name: Bump version & Create Release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           persist-credentials: true
@@ -24,7 +21,7 @@ name: Release
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-      - name: Bump version
+      - name: Bump version in mod.info
         id: bump
         run: |
           VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
@@ -39,7 +36,9 @@ name: Release
         run: |
           git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
           git tag "v${{ steps.bump.outputs.new_version }}"
-          git push origin master --tags
+
+      - name: Push tags
+        run: git push origin master --tags
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
