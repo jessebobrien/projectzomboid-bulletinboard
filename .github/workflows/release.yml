@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - master
-  pull_request:  # Run on PRs for testing workshop upload
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Skip tag push & release (`true` or `false`)' 
+        description: 'Skip tag push & release (`true` or `false`)'
         required: false
         default: 'true'
       bump_type:
@@ -20,9 +19,8 @@ jobs:
   bump-version-and-release:
     name: Bump version & Create Release
     runs-on: ubuntu-latest
-    container:
-      image: cm2network/steamcmd:latest
-      options: --user root
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -37,7 +35,6 @@ jobs:
       - name: Bump version in mod.info
         id: bump
         run: |
-          # Determine bump type: input override or commit message
           BUMP_TYPE="${{ github.event.inputs.bump_type }}"
           if [ -z "$BUMP_TYPE" ]; then
             if git log -1 --pretty=%B | grep -iq "#major"; then
@@ -65,7 +62,7 @@ jobs:
           git add mod.info
 
       - name: Commit and Tag
-        if: >
+        if: |
           github.ref == 'refs/heads/master' &&
           (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         run: |
@@ -73,13 +70,13 @@ jobs:
           git tag "v${{ steps.bump.outputs.new_version }}"
 
       - name: Push tags
-        if: >
+        if: |
           github.ref == 'refs/heads/master' &&
           (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         run: git push origin master --tags
 
       - name: Create GitHub Release
-        if: >
+        if: |
           github.ref == 'refs/heads/master' &&
           (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         uses: softprops/action-gh-release@v1
@@ -88,34 +85,4 @@ jobs:
           name: v${{ steps.bump.outputs.new_version }}
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # --- Steam Workshop Upload ---
-  # TODO: After testing, restrict workshop upload to release pushes only
-      - name: Create Steam Workshop VDF
-        env:
-          STEAM_APP_ID: ${{ secrets.STEAM_APP_ID }}
-          STEAM_WORKSHOP_ITEM_ID: ${{ secrets.STEAM_WORKSHOP_ITEM_ID }}
-        run: |
-          cat > workshop_build_item.vdf <<EOF
-          "workshopitem"
-          {
-            "appid" "$STEAM_APP_ID"
-            "contentfolder" "${{ github.workspace }}"
-            "previewfile" "poster.png"
-            "visibility" "0"
-            "changenote" "Release v${{ steps.bump.outputs.new_version }}"
-            "publishedfileid" "$STEAM_WORKSHOP_ITEM_ID"
-          }
-          EOF
-
-
-      - name: Upload to Steam Workshop
-        env:
-          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
-          STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
-        run: |
-          # Use extracted SteamCMD
-          ${GITHUB_WORKSPACE}/steamcmd/steamcmd.sh +login $STEAM_USERNAME $STEAM_PASSWORD +workshop_build_item $(pwd)/workshop_build_item.vdf +quit
 
