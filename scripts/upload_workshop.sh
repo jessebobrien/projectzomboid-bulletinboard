@@ -31,6 +31,7 @@ docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
   cm2network/steamcmd:latest \
-  +login "$STEAM_USERNAME" "$STEAM_PASSWORD" \
-  +workshop_build_item workshop.vdf \
-  +quit
+  /steamcmd/steamcmd.sh \
+    +login "$STEAM_USERNAME" "$STEAM_PASSWORD" \
+    +workshop_build_item workshop.vdf \
+    +quit
