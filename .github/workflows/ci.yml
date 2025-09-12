@@ -38,13 +38,15 @@ jobs:
           # List Lua files changed in this push or PR
           FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.lua$' || true)
           echo "Changed files: $FILES"
-          echo "::set-output name=files::$FILES"
+          # Export changed files list via environment file
+          echo "files=$FILES" >> $GITHUB_OUTPUT
 
       - name: Run Luacheck
         if: steps.changed.outputs.files != ''
         run: |
           luacheck ${{ steps.changed.outputs.files }} > luacheck-report.txt
       - name: Upload Luacheck Report
+        if: steps.changed.outputs.files != ''
         uses: actions/upload-artifact@v4
         with:
           name: luacheck-report
