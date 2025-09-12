@@ -1,5 +1,6 @@
 -- luacheck: globals describe setup it assert
 package.path = package.path .. ";media/lua/?.lua"
+package.preload["bountybulletin_ui"] = function() return {} end
 local BountyBulletin = require "bountybulletin"
 
 -- Mock board object with modData storage
