@@ -47,10 +47,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install Lua interpreter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.3
+
       - name: Check syntax of Lua files
         run: |
           for file in media/lua/*.lua; do
-            lua -p "$file"
+            lua5.3 -p "$file"
           done
       - name: Install Busted
         run: |
