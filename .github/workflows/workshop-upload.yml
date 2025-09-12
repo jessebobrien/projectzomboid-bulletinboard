@@ -8,7 +8,7 @@ on:
 jobs:
   upload-workshop:
     name: Upload to Steam Workshop
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,4 +43,5 @@ jobs:
             -w /workspace \
             cm2network/steamcmd:latest \
             +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
-            +workshop_build_item /workspace/workshop_build_item.vdf +quit
+            +workshop_build_item "/workspace/workshop_build_item.vdf" \
+            +quit
