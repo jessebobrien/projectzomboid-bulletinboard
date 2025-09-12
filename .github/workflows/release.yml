@@ -34,14 +34,17 @@ jobs:
           git add mod.info
 
       - name: Commit and Tag
+        if: github.ref == 'refs/heads/master'
         run: |
           git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
           git tag "v${{ steps.bump.outputs.new_version }}"
 
       - name: Push tags
+        if: github.ref == 'refs/heads/master'
         run: git push origin master --tags
 
       - name: Create GitHub Release
+        if: github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
