@@ -40,8 +40,12 @@ jobs:
       - name: Run Luacheck
         if: steps.changed.outputs.files != ''
         run: |
-          luacheck ${{ steps.changed.outputs.files }}
-
+          luacheck ${{ steps.changed.outputs.files }} > luacheck-report.txt
+      - name: Upload Luacheck Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: luacheck-report
+          path: luacheck-report.txt
       - name: Validate mod.info
         run: |
           grep -q '^id=' mod.info
@@ -72,4 +76,9 @@ jobs:
       - name: Run unit tests
         run: |
           # Run all Lua test files directly, not just _spec.lua
-          busted tests/*.lua
+          busted tests/*.lua | tee busted-output.txt
+      - name: Upload Test Log
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-log
+          path: busted-output.txt
