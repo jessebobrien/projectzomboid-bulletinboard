@@ -6,6 +6,15 @@ on:
       - master
   pull_request:  # Run on PRs for testing workshop upload
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Skip tag push & release (`true` or `false`)' 
+        required: false
+        default: 'true'
+      bump_type:
+        description: 'Force version bump type: major, minor, or patch'
+        required: false
+        default: ''
 
 jobs:
   bump-version-and-release:
@@ -25,26 +34,51 @@ jobs:
       - name: Bump version in mod.info
         id: bump
         run: |
+          # Determine bump type: input override or commit message
+          BUMP_TYPE="${{ github.event.inputs.bump_type }}"
+          if [ -z "$BUMP_TYPE" ]; then
+            if git log -1 --pretty=%B | grep -iq "#major"; then
+              BUMP_TYPE=major
+            elif git log -1 --pretty=%B | grep -iq "#minor"; then
+              BUMP_TYPE=minor
+            else
+              BUMP_TYPE=patch
+            fi
+          fi
+          echo "Bump type: $BUMP_TYPE"
           VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
           IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
-          PATCH=$((PATCH+1))
+          case "$BUMP_TYPE" in
+            major)
+              MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
+            minor)
+              MIN=$((MIN+1)); PATCH=0;;
+            *)
+              PATCH=$((PATCH+1));;
+          esac
           NEW_VERSION="$MAJ.$MIN.$PATCH"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
           git add mod.info
 
       - name: Commit and Tag
-        if: github.ref == 'refs/heads/master'
+        if: >
+          github.ref == 'refs/heads/master' &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         run: |
           git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
           git tag "v${{ steps.bump.outputs.new_version }}"
 
       - name: Push tags
-        if: github.ref == 'refs/heads/master'
+        if: >
+          github.ref == 'refs/heads/master' &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         run: git push origin master --tags
 
       - name: Create GitHub Release
-        if: github.ref == 'refs/heads/master'
+        if: >
+          github.ref == 'refs/heads/master' &&
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
