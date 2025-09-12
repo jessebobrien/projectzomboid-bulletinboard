@@ -1,4 +1,5 @@
--- Unit tests for BountyBulletin module using Busted
+-- luacheck: globals describe setup it assert
+package.path = package.path .. ";media/lua/?.lua"
 local BountyBulletin = require "bountybulletin"
 
 -- Mock board object with modData storage
