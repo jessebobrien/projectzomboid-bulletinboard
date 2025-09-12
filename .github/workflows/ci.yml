@@ -62,4 +62,5 @@ jobs:
           sudo luarocks install busted
       - name: Run unit tests
         run: |
-          busted tests
+          # Run all Lua test files directly, not just _spec.lua
+          busted tests/*.lua
