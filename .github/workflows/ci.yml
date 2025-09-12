@@ -52,3 +52,9 @@ jobs:
           for file in media/lua/*.lua; do
             lua5.3 -p "$file"
           done
+      - name: Install Busted
+        run: |
+          sudo luarocks install busted
+      - name: Run unit tests
+        run: |
+          busted tests

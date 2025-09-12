@@ -1,41 +1,44 @@
 name: Release
 
-on:
+name: Release
+
+          draft: false
   push:
     branches:
       - master
+  workflow_dispatch:
 
-jobs:
+          prerelease: false
   bump-version-and-release:
     name: Bump version & Create Release
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: true
 
-      - name: Set up Git user
+      - name: Configure Git
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-      - name: Bump version in mod.info
+      - name: Bump version
         id: bump
         run: |
           VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
           IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
-          NEWPATCH=$((PATCH+1))
-          NEWVERSION="$MAJ.$MIN.$NEWPATCH"
-          echo "New version: $NEWVERSION"
-          sed -i "s/^version=.*/version=$NEWVERSION/" mod.info
+          PATCH=$((PATCH+1))
+          NEW_VERSION="$MAJ.$MIN.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
           git add mod.info
-          echo "new_version=$NEWVERSION" >> $GITHUB_OUTPUT
 
-      - name: Commit and tag
+      - name: Commit and Tag
         run: |
           git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
-          git tag v${{ steps.bump.outputs.new_version }}
+          git tag "v${{ steps.bump.outputs.new_version }}"
           git push origin master --tags
 
       - name: Create GitHub Release
@@ -45,12 +48,14 @@ jobs:
           release_name: v${{ steps.bump.outputs.new_version }}
           draft: false
           prerelease: false
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          release_name: v${{ steps.bump.outputs.new_version }}
+          draft: false
+          prerelease: false
 
-      - name: Notify Discord via webhook
+      - name: Notify Discord
         if: success()
-        env:
-          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           curl -H "Content-Type: application/json" \
-            -d '{"content":":tada: New release v${{ steps.bump.outputs.new_version }} is available!\nhttps://github.com/${{ github.repository }}/releases/tag/v${{ steps.bump.outputs.new_version }}"}' \
-            "$WEBHOOK_URL"
+            -d "{\"content\":\":tada: New release v${{ steps.bump.outputs.new_version }} is available!\nhttps://github.com/${{ github.repository }}/releases/tag/v${{ steps.bump.outputs.new_version }}"}" \
+            "$DISCORD_WEBHOOK_URL"
