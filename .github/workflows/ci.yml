@@ -23,8 +23,8 @@ jobs:
       - name: Install Lua and Luacheck
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.3 luarocks
-          sudo luarocks install luacheck
+          # Install Lua and luacheck via apt to include necessary headers
+          sudo apt-get install -y lua5.3 luacheck
 
       - name: Run Luacheck
         run: |
