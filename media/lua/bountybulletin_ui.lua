@@ -83,7 +83,7 @@ function BountyBoardViewUI:createChildren()
         end
     end
     self:addChild(self.listBox)
-    -- Close and Remove buttons with shorter expressions
+    -- Extracted variable for button positioning; create Close and Remove buttons
     local bx = (self.width - 100) / 2
     -- Close button
     self.closeButton = ISButton:new(
