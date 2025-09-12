@@ -1,13 +1,6 @@
 name: Release
-
 permissions:
   contents: write
-
-on:
-  pull_request:
-    branches: [master]
-    types: [closed]
-
 jobs:
   bump-version-and-release:
     if: github.event.pull_request.merged == true
@@ -16,7 +9,7 @@ jobs:
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -27,7 +20,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-      - name: Bump version in mod.info
+      - name: Determine bump type
         id: bump
         run: |
           BUMP_TYPE=""
@@ -50,7 +43,7 @@ jobs:
           sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
           git add mod.info
 
-      - name: Commit and Tag
+      - name: Commit & Tag
         run: |
           git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
           git tag "v${{ steps.bump.outputs.new_version }}"
@@ -71,12 +64,12 @@ jobs:
     needs: bump-version-and-release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: true
 
-      - name: Read version from mod.info
+      - name: Determine version
         id: version
         run: |
           VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
@@ -106,63 +99,9 @@ jobs:
             +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
             +workshop_build_item "/workspace/workshop_build_item.vdf" \
             +quit
-    upload-workshop:
-      name: Upload to Steam Workshop
-      needs: bump-version-and-release
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
-          with:
-            persist-credentials: true
+name: Release
 
-        - name: Read version from mod.info
-          id: version
-          run: |
-            VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
-            echo "v=$VERSION" >> $GITHUB_OUTPUT
-
-        - name: Create Steam Workshop VDF
-          run: |
-            cat > workshop_build_item.vdf <<EOF
-            "workshopitem"
-            {
-              "appid" "${{ secrets.STEAM_APP_ID }}"
-              "contentfolder" "${{ github.workspace }}"
-              "previewfile" "poster.png"
-              "visibility" "0"
-              "changenote" "Release v${{ steps.version.outputs.v }}"
-              "publishedfileid" "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
-            }
-            EOF
-
-        - name: Upload to Steam Workshop via Docker
-          run: |
-            docker run --rm \
-              --entrypoint steamcmd.sh \
-              -v "${{ github.workspace }}:/workspace" \
-              -w /workspace \
-              cm2network/steamcmd:latest \
-              +login ${{ secrets.STEAM_USERNAME }} ${{ secrets.STEAM_PASSWORD }} \
-              +workshop_build_item "/workspace/workshop_build_item.vdf" \
-              +quit
-
-  upload-workshop:
-    name: Upload to Steam Workshop
-    needs: bump-version-and-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: true
-
-      - name: Read version from mod.info
-        id: version
-        run: |
-          VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
-          echo "v=$VERSION" >> $GITHUB_OUTPUT
-
+permissions:
       - name: Create Steam Workshop VDF
         run: |
           cat > workshop_build_item.vdf <<EOF
@@ -177,16 +116,13 @@ jobs:
           }
           EOF
 
-      - name: Upload to Steam Workshop via Docker
+      - name: Upload to Steam Workshop
         run: |
           docker run --rm \
             --entrypoint steamcmd.sh \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             cm2network/steamcmd:latest \
-            +login ${{ secrets.STEAM_USERNAME }} ${{ secrets.STEAM_PASSWORD }} \
+            +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
             +workshop_build_item "/workspace/workshop_build_item.vdf" \
             +quit
-          name: v${{ steps.bump.outputs.new_version }}
-          draft: false
-          prerelease: false
