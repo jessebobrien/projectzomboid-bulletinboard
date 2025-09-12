@@ -47,14 +47,4 @@ jobs:
           release_name: v${{ steps.bump.outputs.new_version }}
           draft: false
           prerelease: false
-          tag_name: v${{ steps.bump.outputs.new_version }}
-          release_name: v${{ steps.bump.outputs.new_version }}
-          draft: false
-          prerelease: false
 
-      - name: Notify Discord
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" \
-            -d "{\"content\":\":tada: New release v${{ steps.bump.outputs.new_version }} is available!\nhttps://github.com/${{ github.repository }}/releases/tag/v${{ steps.bump.outputs.new_version }}"}" \
-            "$DISCORD_WEBHOOK_URL"
