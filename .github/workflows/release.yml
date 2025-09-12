@@ -41,10 +41,12 @@ jobs:
         run: git push origin master --tags
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
-          release_name: v${{ steps.bump.outputs.new_version }}
+          name: v${{ steps.bump.outputs.new_version }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
