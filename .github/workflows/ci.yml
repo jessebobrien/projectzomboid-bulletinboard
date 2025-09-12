@@ -42,7 +42,7 @@ jobs:
         run: |
           luacheck ${{ steps.changed.outputs.files }} > luacheck-report.txt
       - name: Upload Luacheck Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: luacheck-report
           path: luacheck-report.txt
@@ -78,7 +78,7 @@ jobs:
           # Run all Lua test files directly, not just _spec.lua
           busted tests/*.lua | tee busted-output.txt
       - name: Upload Test Log
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-log
           path: busted-output.txt
