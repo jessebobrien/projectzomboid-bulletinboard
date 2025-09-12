@@ -47,10 +47,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Lua interpreter
+      - name: Install Lua and LuaRocks
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.3
+          sudo apt-get install -y lua5.3 luarocks
 
       - name: Check syntax of Lua files
         run: |
