@@ -12,6 +12,14 @@ globals = {
     "ISButton",
     "ISScrollingListBox",
     "UIFont",
+    -- Busted test framework globals
+    "describe",
+    "it",
+    "setup",
+    "teardown",
+    "before_each",
+    "after_each",
+    "assert",
 }
 
 ignore = {

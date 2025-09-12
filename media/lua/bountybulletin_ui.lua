@@ -60,7 +60,10 @@ BountyBoardViewUI = ISPanel:derive("BountyBoardViewUI")
 
 function BountyBoardViewUI:createChildren()
     -- Title
-    local title = ISLabel:new((self.width - 100) / 2, 10, 20, "View Bounties", 1,1,1,1, UIFont.Medium, true)
+    local titleX = (self.width - 100) / 2
+    local title = ISLabel:new(
+        titleX, 10, 20,
+        "View Bounties", 1,1,1,1, UIFont.Medium, true)
     self:addChild(title)
     -- Scrolling list of bounties
     local board = self.worldObject
@@ -80,11 +83,19 @@ function BountyBoardViewUI:createChildren()
         end
     end
     self:addChild(self.listBox)
+    -- Extracted variable for button positioning; create Close and Remove buttons
+    local bx = (self.width - 100) / 2
     -- Close button
-    self.closeButton = ISButton:new((self.width - 100) / 2 + 110, self.height - 30, 100, 25, "Close", self, BountyBoardViewUI.onClose)
+    self.closeButton = ISButton:new(
+        bx + 110, self.height - 30,
+        100, 25,
+        "Close", self, BountyBoardViewUI.onClose)
     self:addChild(self.closeButton)
     -- Remove button
-    self.removeButton = ISButton:new((self.width - 100) / 2 - 110, self.height - 30, 100, 25, "Remove", self, BountyBoardViewUI.onRemove)
+    self.removeButton = ISButton:new(
+        bx - 110, self.height - 30,
+        100, 25,
+        "Remove", self, BountyBoardViewUI.onRemove)
     self:addChild(self.removeButton)
 end
 function BountyBoardViewUI:onRemove()

@@ -1,6 +1,6 @@
 -- Bounty Bulletin interaction script
--- UI integration
-require 'bountybulletin_ui'
+-- UI integration (optional)
+pcall(require, 'bountybulletin_ui')
 local BountyBulletin = {}
 -- Use object modData for storage (persistent and sync)
 
@@ -63,8 +63,12 @@ local function onFillWorldObjectContextMenu(player, context, worldObjects)
     end
 end
 
--- Register event
+-- Register event if available
 ---@diagnostic disable-next-line: undefined-global
-Events.OnFillWorldObjectContextMenu.Add(onFillWorldObjectContextMenu)
+if Events and Events.OnFillWorldObjectContextMenu and Events.OnFillWorldObjectContextMenu.Add then
+    Events.OnFillWorldObjectContextMenu.Add(onFillWorldObjectContextMenu)
+end
+
+-- luacheck: globals Events
 
 return BountyBulletin

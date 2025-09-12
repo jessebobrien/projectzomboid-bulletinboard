@@ -22,10 +22,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Lua and Luacheck
+      - name: Install Lua, headers, and LuaRocks, then Luacheck
         run: |
           sudo apt-get update
-          # Install Lua dev headers and luarocks, then install luacheck via luarocks
+          # Include dev headers for Lua so rocks can build native modules
           sudo apt-get install -y lua5.3 lua5.3-dev luarocks
           sudo luarocks install luacheck
 
@@ -47,8 +47,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install Lua, headers, and LuaRocks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.3 lua5.3-dev luarocks
+
       - name: Check syntax of Lua files
         run: |
           for file in media/lua/*.lua; do
-            lua5.3 -p "$file"
+            luac5.3 -p "$file"
           done
+      - name: Install Busted
+        run: |
+          sudo luarocks install busted
+      - name: Run unit tests
+        run: |
+          # Run all Lua test files directly, not just _spec.lua
+          busted tests/*.lua
