@@ -1,5 +1,10 @@
 # Bounty Bulletin Board Mod
 
+<!-- GitHub Actions status badges: they reflect the workflow status for the current branch -->
+![CI](https://github.com/jessebobrien/projectzomboid-bulletinboard/actions/workflows/ci.yml/badge.svg)
+![Release](https://github.com/jessebobrien/projectzomboid-bulletinboard/actions/workflows/release.yml/badge.svg)
+![Workshop Upload](https://github.com/jessebobrien/projectzomboid-bulletinboard/actions/workflows/workshop-upload.yml/badge.svg)
+
 A Project Zomboid mod that adds a placeable bulletin board for posting and claiming bounties. Players can post item or cash rewards on any board in the world, view active bounties, and remove completed or unwanted posts. All data is persisted across saves and synchronized in multiplayer sessions.
 
 ## Features
