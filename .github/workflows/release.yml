@@ -1,19 +1,179 @@
 name: Release
+
 permissions:
   contents: write
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+
 jobs:
   bump-version-and-release:
-    if: github.event.pull_request.merged == true
-    name: Bump version & Create Release
+    if: ${{ github.event.pull_request.merged == true }}
+    name: Bump Version & Create Release
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
+    name: Release
+
+      - name: Bump version
+      pull_request:
+        branches: [master]
+        types: [closed]
+
+    permissions:
+      contents: write
+
+        id: bump
+      bump-version-and-release:
+        if: ${{ github.event.pull_request.merged == true }}
+        runs-on: ubuntu-latest
+        outputs:
+          new_version: ${{ steps.bump.outputs.new_version }}
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v3
+            with:
+              fetch-depth: 0
+              persist-credentials: true
+
+          - name: Configure Git
+            run: |
+              git config user.name "github-actions"
+              git config user.email "actions@github.com"
+
+          - name: Bump version
+            id: bump
+            run: |
+              BUMP_TYPE=patch
+              if git log -1 --pretty=%B | grep -iq "#major"; then BUMP_TYPE=major; fi
+              if git log -1 --pretty=%B | grep -iq "#minor"; then BUMP_TYPE=minor; fi
+              VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
+              IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
+              case "$BUMP_TYPE" in
+                major) MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
+                minor) MIN=$((MIN+1)); PATCH=0;;
+                patch) PATCH=$((PATCH+1));;
+              esac
+              NEW_VERSION="$MAJ.$MIN.$PATCH"
+              echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+              sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
+              git add mod.info
+
+          - name: Commit & tag
+            run: |
+              git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
+              git tag "v${{ steps.bump.outputs.new_version }}"
+
+          - name: Push tags
+            run: git push origin master --tags
+
+          - name: Create GitHub release
+            uses: softprops/action-gh-release@v1
+            with:
+              tag_name: v${{ steps.bump.outputs.new_version }}
+              name: v${{ steps.bump.outputs.new_version }}
+              draft: false
+              prerelease: false
+
+      upload-workshop:
+        needs: bump-version-and-release
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v3
+            with:
+              persist-credentials: true
+
+          - name: Generate Workshop VDF
+            run: |
+              cat <<EOF > workshop_build_item.vdf
+    "workshopitem"
+    {
+      "appid" "${{ secrets.STEAM_APP_ID }}"
+      "contentfolder" "${{ github.workspace }}"
+      "previewfile" "poster.png"
+      "visibility" "0"
+      "changenote" "Release v${{ needs.bump-version-and-release.outputs.new_version }}"
+      "publishedfileid" "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
+    }
+    EOF
+
+          - name: Upload to Steam Workshop
+            run: |
+              docker run --rm \
+                cm2network/steamcmd:latest \
+                +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
+                +workshop_build_item workshop_build_item.vdf \
+                +quit
+        run: |
+          BUMP_TYPE=patch
+          if git log -1 --pretty=%B | grep -iq "#major"; then BUMP_TYPE=major; fi
+          if git log -1 --pretty=%B | grep -iq "#minor"; then BUMP_TYPE=minor; fi
+          VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
+          IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
+          case "$BUMP_TYPE" in
+            major) MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
+            minor) MIN=$((MIN+1)); PATCH=0;;
+            patch) PATCH=$((PATCH+1));;
+          esac
+          NEW_VERSION="$MAJ.$MIN.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
+          git add mod.info
+          
+      - name: Commit & tag
+        run: |
+          git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          
+      - name: Push tags
+        run: git push origin master --tags
+        
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          name: v${{ steps.bump.outputs.new_version }}
+          draft: false
+          prerelease: false
+          
+  upload-workshop:
+    name: Upload to Steam Workshop
+    needs: bump-version-and-release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
           persist-credentials: true
+          
+      - name: Read version
+        id: version
+        run: echo "v=${{ needs.bump-version-and-release.outputs.new_version }}" >> $GITHUB_OUTPUT
+        
+      - name: Generate Workshop VDF
+        run: |
+          cat > workshop_build_item.vdf <<EOF
+          "workshopitem"
+          {
+            "appid" "${{ secrets.STEAM_APP_ID }}"
+            "contentfolder" "${{ github.workspace }}"
+            "previewfile" "poster.png"
+            "visibility" "0"
+            "changenote" "Release v${{ steps.version.outputs.v }}"
+            "publishedfileid" "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
+          }
+          EOF
+          
+      - name: Upload to Steam Workshop
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            cm2network/steamcmd:latest \
+            steamcmd.sh +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" +workshop_build_item /workspace/workshop_build_item.vdf +quit
 
       - name: Configure Git
         run: |
@@ -31,57 +191,181 @@ jobs:
           else
             BUMP_TYPE=patch
           fi
-          VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
-          IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
-          case "$BUMP_TYPE" in
-            major) MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
-            minor) MIN=$((MIN+1)); PATCH=0;;
-            *) PATCH=$((PATCH+1));;
-          esac
-          NEW_VERSION="$MAJ.$MIN.$PATCH"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
-          git add mod.info
+            - name: Configure Git
+              run: |
+                git config user.name "github-actions"
+                git config user.email "actions@github.com"
 
-      - name: Commit & Tag
-        run: |
-          git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
-          git tag "v${{ steps.bump.outputs.new_version }}"
+            - name: Bump version in mod.info
+              id: bump
+              run: |
+                BUMP_TYPE=""
+                if git log -1 --pretty=%B | grep -iq "#major"; then
+                  BUMP_TYPE=major
+                elif git log -1 --pretty=%B | grep -iq "#minor"; then
+                  BUMP_TYPE=minor
+                else
+                  BUMP_TYPE=patch
+                fi
+                VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
+                IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
+                case "$BUMP_TYPE" in
+                  major) MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
+                  minor) MIN=$((MIN+1)); PATCH=0;;
+                  *) PATCH=$((PATCH+1));;
+                esac
+                NEW_VERSION="$MAJ.$MIN.$PATCH"
+                echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+                sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
+                git add mod.info
 
-      - name: Push tags
-        run: git push origin master --tags
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
           name: v${{ steps.bump.outputs.new_version }}
-          draft: false
-          prerelease: false
+          name: Release
 
-  upload-workshop:
-    name: Upload to Steam Workshop
-    needs: bump-version-and-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: true
+          permissions:
+            contents: write
 
-      - name: Determine version
-        id: version
-        run: |
-          VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
-          echo "v=$VERSION" >> $GITHUB_OUTPUT
+          on:
+            pull_request:
+              branches: [master]
+              types: [closed]
 
-      - name: Create Steam Workshop VDF
-        run: |
-          cat > workshop_build_item.vdf <<EOF
-          "workshopitem"
-          {
-            "appid" "${{ secrets.STEAM_APP_ID }}"
-            "contentfolder" "${{ github.workspace }}"
+          jobs:
+            bump-version-and-release:
+              if: github.event.pull_request.merged == true
+              name: Bump version & Create Release
+              runs-on: ubuntu-latest
+              outputs:
+                new_version: ${{ steps.bump.outputs.new_version }}
+              steps:
+                - name: Checkout code
+                  uses: actions/checkout@v3
+                  with:
+                    fetch-depth: 0
+                    persist-credentials: true
+
+                - name: Configure Git
+                  run: |
+                    git config user.name "github-actions"
+                    git config user.email "actions@github.com"
+
+                - name: Bump version in mod.info
+                  id: bump
+                  run: |
+                    BUMP_TYPE=""
+                    if git log -1 --pretty=%B | grep -iq "#major"; then
+                      BUMP_TYPE=major
+                    elif git log -1 --pretty=%B | grep -iq "#minor"; then
+                      BUMP_TYPE=minor
+                    else
+                      BUMP_TYPE=patch
+                    fi
+                    VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
+                    IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
+                    case "$BUMP_TYPE" in
+                      major) MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
+                      minor) MIN=$((MIN+1)); PATCH=0;;
+                      *) PATCH=$((PATCH+1));;
+                    esac
+                    NEW_VERSION="$MAJ.$MIN.$PATCH"
+                    echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+                    sed -i "s/^version=.*/version=$NEW_VERSION/" mod.info
+                    git add mod.info
+
+                - name: Commit & Tag
+                  run: |
+                    git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
+                    git tag "v${{ steps.bump.outputs.new_version }}"
+
+                - name: Push tags
+                  run: git push origin master --tags
+
+                - name: Create GitHub Release
+                  uses: softprops/action-gh-release@v1
+                  with:
+                    tag_name: v${{ steps.bump.outputs.new_version }}
+                    name: v${{ steps.bump.outputs.new_version }}
+                    draft: false
+                    prerelease: false
+              upload-workshop:
+                name: Upload to Steam Workshop
+                needs: bump-version-and-release
+                runs-on: ubuntu-latest
+                steps:
+                  - name: Checkout code
+                    uses: actions/checkout@v3
+                    with:
+                      persist-credentials: true
+
+                  - name: Read version
+                    id: version
+                    run: echo "v=${{ needs.bump-version-and-release.outputs.new_version }}" >> $GITHUB_OUTPUT
+
+                  - name: Create Steam Workshop VDF
+                    run: |
+                      cat > workshop_build_item.vdf <<EOF
+                      "workshopitem"
+                      {
+                        "appid" "${{ secrets.STEAM_APP_ID }}"
+                        "contentfolder" "${{ github.workspace }}"
+                        "previewfile" "poster.png"
+                        "visibility" "0"
+                        "changenote" "Release v${{ steps.version.outputs.v }}"
+                        "publishedfileid" "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
+                      }
+                      EOF
+
+                  - name: Upload to Steam Workshop via Docker
+                    run: |
+                      docker run --rm \
+                        --entrypoint steamcmd.sh \
+                        -v "${{ github.workspace }}:/workspace" \
+                        -w /workspace \
+                        cm2network/steamcmd:latest \
+                        +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
+                        +workshop_build_item "/workspace/workshop_build_item.vdf" \
+                        +quit
+
+            upload-workshop:
+              name: Upload to Steam Workshop
+              needs: bump-version-and-release
+              runs-on: ubuntu-latest
+              steps:
+                - name: Checkout code
+                  uses: actions/checkout@v3
+                  with:
+                    persist-credentials: true
+
+                - name: Read version
+                  id: version
+                  run: echo "v=${{ needs.bump-version-and-release.outputs.new_version }}" >> $GITHUB_OUTPUT
+
+                - name: Create Steam Workshop VDF
+                  run: |
+                    cat > workshop_build_item.vdf <<EOF
+                    "workshopitem"
+                    {
+                      "appid" "${{ secrets.STEAM_APP_ID }}"
+                      "contentfolder" "${{ github.workspace }}"
+                      "previewfile" "poster.png"
+                      "visibility" "0"
+                      "changenote" "Release v${{ steps.version.outputs.v }}"
+                      "publishedfileid" "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
+                    }
+                    EOF
+
+                - name: Upload to Steam Workshop
+                  run: |
+                    docker run --rm \
+                      --entrypoint steamcmd.sh \
+                      -v "${{ github.workspace }}:/workspace" \
+                      -w /workspace \
+                      cm2network/steamcmd:latest \
+                      +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
+                      +workshop_build_item workshop_build_item.vdf \
+                      +quit
             "previewfile" "poster.png"
             "visibility" "0"
             "changenote" "Release v${{ steps.version.outputs.v }}"
