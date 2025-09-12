@@ -1,0 +1,14 @@
+module bountybulletin
+{
+    recipe MakeBountyBulletinBoard
+    {
+        Keep Hammer,
+        Keep Saw,
+        Need Plank,
+        Counter Wood,
+        Amount 4,
+        OnCreate onBuildWoodenObject,
+        Category = Carpenter,
+        Furniture = BountyBulletinBoard,
+    }
+}

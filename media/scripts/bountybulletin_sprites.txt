@@ -1,0 +1,22 @@
+module bountybulletin
+{
+	// Sprite sheet for the bulletin board
+	sheet BountyBulletinBoardSheet
+	{
+		Texture = poster.png
+		TileW = 64
+		TileH = 64
+		XFrames = 1
+		YFrames = 1
+	}
+
+	// Static model definition for placing in the world
+	StaticModel BountyBulletinBoard
+	{
+		Sheet = BountyBulletinBoardSheet
+		Loop = false
+		X = 0
+		Y = 0
+		Z = 0
+	}
+}

@@ -1,0 +1,16 @@
+module bountybulletin
+{
+	worldobjects
+	{
+		BountyBulletinBoard
+		{
+			DisplayName = Bulletin Board,
+			Icon = BountyBulletinBoard,
+			Weight = 10,
+			StaticModel = BountyBulletinBoard,
+			IsContainer = true,
+			MaxItems = 20,
+			CanBarricade = false,
+		}
+	}
+}

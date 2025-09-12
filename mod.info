@@ -1,0 +1,10 @@
+name=Bounty Bulletin
+poster=poster.png
+id=bountybulletin
+description=Allow players to add notices to cork noteboards.
+version=0.0.1
+supportedGameVersion=42.0
+require=Base
+modType=client;server;content
+tags=multiplayer
+url=http://theindiestone.com/forums/index.php/topic/2011-how-to-use-the-upcoming-modloader/
