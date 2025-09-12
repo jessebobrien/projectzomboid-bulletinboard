@@ -5,11 +5,13 @@ on:
     paths:
       - '**.lua'
       - 'mod.info'
+      - '.luacheckrc'
       - '.github/workflows/**'
   pull_request:
     paths:
       - '**.lua'
       - 'mod.info'
+      - '.luacheckrc'
       - '.github/workflows/**'
 
 jobs:
