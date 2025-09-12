@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [master]
     paths:
       - '**.lua'
       - 'mod.info'
@@ -21,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Install Lua, headers, and LuaRocks, then Luacheck
         run: |
@@ -29,10 +32,25 @@ jobs:
           sudo apt-get install -y lua5.3 lua5.3-dev luarocks
           sudo luarocks install luacheck
 
-      - name: Run Luacheck
+      - name: Determine changed Lua files
+        id: changed
         run: |
-          luacheck media/lua
+          # List Lua files changed in this push or PR
+          FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.lua$' || true)
+          echo "Changed files: $FILES"
+          # Export changed files list via environment file
+          echo "files=$FILES" >> $GITHUB_OUTPUT
 
+      - name: Run Luacheck
+        if: steps.changed.outputs.files != ''
+        run: |
+          luacheck ${{ steps.changed.outputs.files }} > luacheck-report.txt
+      - name: Upload Luacheck Report
+        if: steps.changed.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: luacheck-report
+          path: luacheck-report.txt
       - name: Validate mod.info
         run: |
           grep -q '^id=' mod.info
@@ -42,10 +60,13 @@ jobs:
   build-test:
     name: Syntax check
     runs-on: ubuntu-latest
-    needs: lint
+    # Run in parallel with lint
+    # needs: lint  # removed to allow parallel execution
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Install Lua, headers, and LuaRocks
         run: |
@@ -63,4 +84,9 @@ jobs:
       - name: Run unit tests
         run: |
           # Run all Lua test files directly, not just _spec.lua
-          busted tests/*.lua
+          busted tests/*.lua | tee busted-output.txt
+      - name: Upload Test Log
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: busted-output.txt

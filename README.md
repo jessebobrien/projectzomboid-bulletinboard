@@ -1,5 +1,10 @@
 # Bounty Bulletin Board Mod
 
+<!-- GitHub Actions status badges: they reflect the workflow status for the current branch -->
+![CI](https://github.com/jessebobrien/projectzomboid-bulletinboard/actions/workflows/ci.yml/badge.svg?branch=steam-workshop)
+![Release](https://github.com/jessebobrien/projectzomboid-bulletinboard/actions/workflows/release.yml/badge.svg?branch=steam-workshop)
+![Deploy](https://github.com/jessebobrien/projectzomboid-bulletinboard/actions/workflows/workshop-upload.yml/badge.svg?branch=steam-workshop)
+
 A Project Zomboid mod that adds a placeable bulletin board for posting and claiming bounties. Players can post item or cash rewards on any board in the world, view active bounties, and remove completed or unwanted posts. All data is persisted across saves and synchronized in multiplayer sessions.
 
 ## Features
@@ -15,6 +20,18 @@ A Project Zomboid mod that adds a placeable bulletin board for posting and claim
 1. Copy the `bountybulletin` folder into your `Zomboid/mods/` directory.
 2. Enable **Bounty Bulletin Board** in the Mods menu.
 3. Start or load a game, then right-click a corkboard to post or view bounties.
+
+## Steam Workshop
+
+Upon merging to `master`, the GitHub Actions workflow will:
+- Bump the `mod.info` version, tag the release, and publish on GitHub
+- Build a `workshop_build_item.vdf` manifest with your Steam App and Workshop Item IDs
+- Install and run `steamcmd` to upload or update your mod on the Steam Workshop
+
+Make sure to define these repository secrets:
+- `STEAM_USERNAME` & `STEAM_PASSWORD` for your Steam account
+- `STEAM_APP_ID` (use `108600` for Project Zomboid client)
+- `STEAM_WORKSHOP_ITEM_ID` (use `0` for the first run; update with the published FileID afterwards)
 
 ## Contributing
 
