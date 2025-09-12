@@ -20,6 +20,9 @@ jobs:
   bump-version-and-release:
     name: Bump version & Create Release
     runs-on: ubuntu-latest
+    container:
+      image: cm2network/steamcmd:latest
+      options: --user root
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -107,13 +110,6 @@ jobs:
           }
           EOF
 
-      - name: Install SteamCMD
-        run: |
-          # Fetch and extract official SteamCMD
-          mkdir -p ${GITHUB_WORKSPACE}/steamcmd
-          cd ${GITHUB_WORKSPACE}/steamcmd
-          wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
-          tar -xzf steamcmd_linux.tar.gz
 
       - name: Upload to Steam Workshop
         env:
