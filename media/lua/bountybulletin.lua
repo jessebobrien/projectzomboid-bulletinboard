@@ -1,6 +1,6 @@
 -- Bounty Bulletin interaction script
--- UI integration
-require 'bountybulletin_ui'
+-- UI integration (optional)
+pcall(require, 'bountybulletin_ui')
 local BountyBulletin = {}
 -- Use object modData for storage (persistent and sync)
 
