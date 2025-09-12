@@ -18,16 +18,16 @@ jobs:
   lint:
     name: Lint Lua and validate mod files
     runs-on: ubuntu-latest
+    # Use official Lua image to avoid installing Lua each run
+    container: lua:5.3
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Lua and Luacheck
+      - name: Install Luacheck
         run: |
-          sudo apt-get update
-          # Install Lua dev headers and luarocks, then install luacheck via luarocks
-          sudo apt-get install -y lua5.3 lua5.3-dev luarocks
-          sudo luarocks install luacheck
+          apt-get update
+          apt-get install -y luacheck
 
       - name: Run Luacheck
         run: |
