@@ -39,4 +39,10 @@ jobs:
           STEAM_PASSWORD: ${{ secrets.STEAM_PASSWORD }}
           STEAM_WORKSHOP_ITEM_ID: ${{ secrets.STEAM_WORKSHOP_ITEM_ID }}
           NEW_VERSION: ${{ steps.bump.outputs.new_version }}
-        run: bash scripts/upload_workshop.sh
+        run: |
+          bash scripts/upload_workshop.sh \
+            "$STEAM_APP_ID" \
+            "$STEAM_USERNAME" \
+            "$STEAM_PASSWORD" \
+            "$STEAM_WORKSHOP_ITEM_ID" \
+            "$NEW_VERSION"
