@@ -1,11 +1,9 @@
 name: Release
 
 on:
-  pull_request:
-    branches:
-      - master
-    types:
-      - closed
+  pull_request_target:
+    branches: [master]
+    types: [closed]
 
 permissions:
   contents: write
@@ -15,7 +13,7 @@ jobs:
     if: ${{ github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -23,17 +21,17 @@ jobs:
       - name: Bump version
         id: bump
         run: |
-          VER=$(grep '^version=' mod.info | cut -d'=' -f2)
-          IFS='.' read -r MAJ MIN PATCH <<< "$VER"
-          PATCH=$((PATCH+1))
-          NEW="$MAJ.$MIN.$PATCH"
-          echo "new_version=$NEW" >> $GITHUB_OUTPUT
-          sed -i "s/^version=.*/version=$NEW/" mod.info
+          version=$(grep '^version=' mod.info | cut -d'=' -f2)
+          IFS='.' read -r major minor patch <<< "$version"
+          patch=$((patch+1))
+          new_version="$major.$minor.$patch"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          sed -i "s/^version=.*/version=$new_version/" mod.info
 
-      - name: Commit, Tag & Push
+      - name: Commit & Tag
         run: |
-          git config user.name github-actions
-          git config user.email actions@github.com
+          git config user.name 'github-actions'
+          git config user.email 'actions@github.com'
           git add mod.info
           git commit -m "Release v${{ steps.bump.outputs.new_version }}"
           git tag "v${{ steps.bump.outputs.new_version }}"
@@ -50,20 +48,20 @@ jobs:
       - name: Upload to Steam Workshop
         run: |
           cat <<EOF > workshop.vdf
-"workshopitem"
-{
-  "appid"            "${{ secrets.STEAM_APP_ID }}"
-  "contentfolder"    "${{ github.workspace }}"
-  "previewfile"      "poster.png"
-  "visibility"       "0"
-  "changenote"       "Release v${{ steps.bump.outputs.new_version }}"
-  "publishedfileid"  "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
-}
-EOF
+          "workshopitem"
+          {
+            "appid" "${{ secrets.STEAM_APP_ID }}"
+            "contentfolder" "${{ github.workspace }}"
+            "previewfile" "poster.png"
+            "visibility" "0"
+            "changenote" "Release v${{ steps.bump.outputs.new_version }}"
+            "publishedfileid" "${{ secrets.STEAM_WORKSHOP_ITEM_ID }}"
+          }
+          EOF
           docker run --rm \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             cm2network/steamcmd:latest \
             steamcmd.sh +login "${{ secrets.STEAM_USERNAME }}" "${{ secrets.STEAM_PASSWORD }}" \
-            +workshop_build_item /workspace/workshop.vdf \
+            +workshop_build_item workshop.vdf \
             +quit
