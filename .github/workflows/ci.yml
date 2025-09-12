@@ -1,14 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - '**.lua'
-      - 'mod.info'
-      - '.luacheckrc'
-      - '.github/workflows/**'
   pull_request:
+    branches: [master]
     paths:
       - '**.lua'
       - 'mod.info'
