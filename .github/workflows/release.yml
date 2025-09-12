@@ -1,24 +1,16 @@
 name: Release
+
 permissions:
   contents: write
 
 on:
-  push:
-    branches:
-      - master
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Skip tag push & release (`true` or `false`)'
-        required: false
-        default: 'true'
-      bump_type:
-        description: 'Force version bump type: major, minor, or patch'
-        required: false
-        default: ''
+  pull_request:
+    branches: [master]
+    types: [closed]
 
 jobs:
   bump-version-and-release:
+    if: github.event.pull_request.merged == true
     name: Bump version & Create Release
     runs-on: ubuntu-latest
     outputs:
@@ -27,6 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Configure Git
@@ -37,26 +30,20 @@ jobs:
       - name: Bump version in mod.info
         id: bump
         run: |
-          BUMP_TYPE="${{ github.event.inputs.bump_type }}"
-          if [ -z "$BUMP_TYPE" ]; then
-            if git log -1 --pretty=%B | grep -iq "#major"; then
-              BUMP_TYPE=major
-            elif git log -1 --pretty=%B | grep -iq "#minor"; then
-              BUMP_TYPE=minor
-            else
-              BUMP_TYPE=patch
-            fi
+          BUMP_TYPE=""
+          if git log -1 --pretty=%B | grep -iq "#major"; then
+            BUMP_TYPE=major
+          elif git log -1 --pretty=%B | grep -iq "#minor"; then
+            BUMP_TYPE=minor
+          else
+            BUMP_TYPE=patch
           fi
-          echo "Bump type: $BUMP_TYPE"
           VERSION=$(grep '^version=' mod.info | cut -d'=' -f2)
           IFS='.' read -r MAJ MIN PATCH <<< "$VERSION"
           case "$BUMP_TYPE" in
-            major)
-              MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
-            minor)
-              MIN=$((MIN+1)); PATCH=0;;
-            *)
-              PATCH=$((PATCH+1));;
+            major) MAJ=$((MAJ+1)); MIN=0; PATCH=0;;
+            minor) MIN=$((MIN+1)); PATCH=0;;
+            *) PATCH=$((PATCH+1));;
           esac
           NEW_VERSION="$MAJ.$MIN.$PATCH"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -64,27 +51,17 @@ jobs:
           git add mod.info
 
       - name: Commit and Tag
-        if: |
-          github.ref == 'refs/heads/master' &&
-          (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         run: |
           git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
           git tag "v${{ steps.bump.outputs.new_version }}"
 
       - name: Push tags
-        if: |
-          github.ref == 'refs/heads/master' &&
-          (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         run: git push origin master --tags
 
       - name: Create GitHub Release
-        if: |
-          github.ref == 'refs/heads/master' &&
-          (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false')
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.bump.outputs.new_version }}
           name: v${{ steps.bump.outputs.new_version }}
           draft: false
           prerelease: false
-
