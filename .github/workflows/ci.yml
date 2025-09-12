@@ -18,17 +18,14 @@ jobs:
   lint:
     name: Lint Lua and validate mod files
     runs-on: ubuntu-latest
-    # Use a prebuilt Lua 5.3 container to skip installing Lua
-    container: cirrusci/lua:5.3
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Luacheck
+      - name: Install Lua and Luacheck
         run: |
-          apt-get update
-          apt-get install -y luarocks
-          luarocks install luacheck
+          sudo apt-get update
+          sudo apt-get install -y lua5.3 luacheck
 
       - name: Run Luacheck
         run: |
