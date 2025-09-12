@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Install Lua, headers, and LuaRocks, then Luacheck
         run: |
@@ -56,10 +58,13 @@ jobs:
   build-test:
     name: Syntax check
     runs-on: ubuntu-latest
-    needs: lint
+    # Run in parallel with lint
+    # needs: lint  # removed to allow parallel execution
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Install Lua, headers, and LuaRocks
         run: |
