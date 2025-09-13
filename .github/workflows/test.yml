@@ -30,6 +30,7 @@ jobs:
         run: |
           echo "Inspecting SteamCMD Docker image for entrypoint and file paths"
           docker pull cm2network/steamcmd:latest
-          docker run --rm cm2network/steamcmd:latest sh -c "echo Entrypoint: \\$(jq -r '.Config.Entrypoint[]?' /docker-entrypoint.json 2>/dev/null || true)"
-          docker run --rm cm2network/steamcmd:latest sh -c "find / -type f -name 'steamcmd*' -print"
+          # Show configured entrypoint
           docker image inspect cm2network/steamcmd:latest --format 'Entrypoint: {{json .Config.Entrypoint}}'
+          # Find steamcmd scripts under /home/steam
+          docker run --rm cm2network/steamcmd:latest sh -c "find /home/steam -maxdepth 3 -type f -name 'steamcmd*' 2>/dev/null"
