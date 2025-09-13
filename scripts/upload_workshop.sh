@@ -56,8 +56,8 @@ fi
 run_cmd docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
+  --entrypoint /steamcmd.sh \
   cm2network/steamcmd:latest \
-  /steamcmd/steamcmd.sh \
     +login "$STEAM_USERNAME" "$STEAM_PASSWORD" \
     +workshop_build_item workshop.vdf \
     +quit

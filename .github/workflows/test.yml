@@ -1,0 +1,27 @@
+name: Test Scripts
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+      - '.github/workflows/release.yml'
+  # Manual trigger to test workflows
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Test bump_and_tag.sh dry-run
+        run: |
+          echo "version=1.2.3" > mod.info
+          bash scripts/bump_and_tag.sh --dry-run
+
+      - name: Test upload_workshop.sh dry-run
+        run: |
+          bash scripts/upload_workshop.sh --dry-run 480 user pass 999999 1.2.3
