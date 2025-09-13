@@ -25,3 +25,11 @@ jobs:
       - name: Test upload_workshop.sh dry-run
         run: |
           bash scripts/upload_workshop.sh --dry-run 480 user pass 999999 1.2.3
+      
+      - name: Debug SteamCMD image layout
+        run: |
+          echo "Inspecting SteamCMD Docker image for entrypoint and file paths"
+          docker pull cm2network/steamcmd:latest
+          docker run --rm cm2network/steamcmd:latest sh -c "echo Entrypoint: \\$(jq -r '.Config.Entrypoint[]?' /docker-entrypoint.json 2>/dev/null || true)"
+          docker run --rm cm2network/steamcmd:latest sh -c "find / -type f -name 'steamcmd*' -print"
+          docker image inspect cm2network/steamcmd:latest --format 'Entrypoint: {{json .Config.Entrypoint}}'
