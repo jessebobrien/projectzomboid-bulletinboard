@@ -52,12 +52,9 @@ if [[ $DRY_RUN -eq 1 ]]; then
   exit 0
 fi
 
-# Upload to Steam Workshop via Docker
+# Upload to Steam Workshop via Docker using the actual steamcmd.sh location
 run_cmd docker run --rm \
   -v "$(pwd):/workspace" \
   -w /workspace \
-  --entrypoint /steamcmd.sh \
   cm2network/steamcmd:latest \
-    +login "$STEAM_USERNAME" "$STEAM_PASSWORD" \
-    +workshop_build_item workshop.vdf \
-    +quit
+  /home/steam/steamcmd/steamcmd.sh +login "$STEAM_USERNAME" "$STEAM_PASSWORD" +workshop_build_item workshop.vdf +quit
